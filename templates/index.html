@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>Prandtl-Meyer Expansion Fan Tool</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f3f5f7;
+            color: #222;
+        }
+
+        header {
+            background: #1f4e79;
+            color: white;
+            padding: 20px;
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 25px;
+        }
+
+        header p {
+            margin: 6px 0 0;
+            color: #dce8f3;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 25px auto;
+            padding: 0 15px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .tabs button {
+            border: none;
+            padding: 11px 18px;
+            background: #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .tabs button.active {
+            background: #1f4e79;
+            color: white;
+        }
+
+        .tab {
+            display: none;
+        }
+
+        .tab.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            border-radius: 7px;
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #1f4e79;
+        }
+
+        h3 {
+            color: #1f4e79;
+            margin-top: 25px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        input {
+            width: 100%;
+            padding: 9px;
+            border: 1px solid #bbb;
+            border-radius: 4px;
+        }
+
+        .submit {
+            margin-top: 15px;
+            padding: 10px 20px;
+            border: none;
+            background: #1f4e79;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .submit:hover {
+            background: #163a5c;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .result {
+            padding: 15px;
+            background: #f5f8fb;
+            border: 1px solid #d5dfe8;
+            border-radius: 5px;
+        }
+
+        .result b {
+            display: block;
+            margin-top: 5px;
+            font-size: 20px;
+            color: #1f4e79;
+        }
+
+        .error {
+            background: #ffe5e5;
+            color: #a00000;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        th {
+            background: #1f4e79;
+            color: white;
+        }
+
+        th,
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+
+        tr:nth-child(even) {
+            background: #f5f5f5;
+        }
+
+        .formula {
+            background: #f7f7f7;
+            border-left: 4px solid #1f4e79;
+            padding: 13px;
+            margin: 10px 0;
+            font-family: "Times New Roman", serif;
+            font-size: 18px;
+            overflow-x: auto;
+        }
+
+        .note {
+            color: #555;
+            font-size: 14px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #777;
+            font-size: 13px;
+        }
+
+        @media(max-width: 700px) {
+
+            .form-grid,
+            .results {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                flex-wrap: wrap;
+            }
+
+            table {
+                font-size: 11px;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+
+<header>
+
+    <h1>Prandtl-Meyer Expansion Fan Tool</h1>
+
+    <p>Supersonic Flow Analysis</p>
+
+</header>
+
+
+<div class="container">
+
+
+    <!-- TABS -->
+
+    <div class="tabs">
+
+        <button
+            class="{% if active_tab != 'table' and active_tab != 'formulas' %}active{% endif %}"
+            onclick="showTab('calculator', this)">
+            Calculator
+        </button>
+
+        <button
+            class="{% if active_tab == 'table' %}active{% endif %}"
+            onclick="showTab('table', this)">
+            Isentropic Table
+        </button>
+
+        <button
+            class="{% if active_tab == 'formulas' %}active{% endif %}"
+            onclick="showTab('formulas', this)">
+            Formulas
+        </button>
+
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- CALCULATOR -->
+    <!-- ===================== -->
+
+    <div id="calculator" class="tab {% if active_tab != 'table' and active_tab != 'formulas' %}active{% endif %}">
+
+        <div class="card">
+
+            <h2>Point Calculator</h2>
+
+            <form method="POST">
+
+                <input
+                    type="hidden"
+                    name="action"
+                    value="calc">
+
+                <div class="form-grid">
+
+                    <div>
+
+                        <label>Upstream Mach Number M₁</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            name="M1"
+                            value="{{ M1 }}"
+                            required>
+
+                    </div>
+
+
+                    <div>
+
+                        <label>Specific Heat Ratio γ</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            name="gamma"
+                            value="{{ gamma }}"
+                            required>
+
+                    </div>
+
+
+                    <div>
+
+                        <label>Turning Angle θ (°)</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            name="theta"
+                            value="{{ theta }}"
+                            required>
+
+                    </div>
+
+                </div>
+
+                <button class="submit">
+                    Calculate
+                </button>
+
+            </form>
+
+        </div>
+
+
+        {% if error and active_tab != 'table' %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+        {% endif %}
+
+
+        {% if result %}
+
+        <div class="card">
+
+            <h2>Results</h2>
+
+
+            <!-- MACH -->
+
+            <h3>Mach Number</h3>
+
+            <div class="results">
+
+                <div class="result">
+                    M₁
+                    <b>{{ result.M1 }}</b>
+                </div>
+
+                <div class="result">
+                    M₂
+                    <b>{{ result.M2 }}</b>
+                </div>
+
+                <div class="result">
+                    Turning Angle
+                    <b>{{ result.theta }}°</b>
+                </div>
+
+            </div>
+
+
+            <!-- PRANDTL MEYER -->
+
+            <h3>Prandtl-Meyer Angles</h3>
+
+            <div class="results">
+
+                <div class="result">
+                    ν₁
+                    <b>{{ result.nu1 }}°</b>
+                </div>
+
+                <div class="result">
+                    ν₂
+                    <b>{{ result.nu2 }}°</b>
+                </div>
+
+                <div class="result">
+                    ν₂ − ν₁
+                    <b>{{ result.theta }}°</b>
+                </div>
+
+            </div>
+
+
+            <!-- MACH ANGLE -->
+
+            <h3>Mach Angles</h3>
+
+            <div class="results">
+
+                <div class="result">
+                    μ₁
+                    <b>{{ result.mu1 }}°</b>
+                </div>
+
+                <div class="result">
+                    μ₂
+                    <b>{{ result.mu2 }}°</b>
+                </div>
+
+            </div>
+
+
+            <!-- ISENTROPIC -->
+
+            <h3>Isentropic Properties</h3>
+
+            <table>
+
+                <tr>
+                    <th>Property</th>
+                    <th>State 1</th>
+                    <th>State 2</th>
+                </tr>
+
+                <tr>
+                    <td>T/T₀</td>
+                    <td>{{ result.T1 }}</td>
+                    <td>{{ result.T2 }}</td>
+                </tr>
+
+                <tr>
+                    <td>p/p₀</td>
+                    <td>{{ result.P1 }}</td>
+                    <td>{{ result.P2 }}</td>
+                </tr>
+
+                <tr>
+                    <td>ρ/ρ₀</td>
+                    <td>{{ result.R1 }}</td>
+                    <td>{{ result.R2 }}</td>
+                </tr>
+
+            </table>
+
+
+            <!-- ACROSS EXPANSION -->
+
+            <h3>Across Expansion</h3>
+
+            <div class="results">
+
+                <div class="result">
+                    T₂/T₁
+                    <b>{{ result.T21 }}</b>
+                </div>
+
+                <div class="result">
+                    p₂/p₁
+                    <b>{{ result.P21 }}</b>
+                </div>
+
+                <div class="result">
+                    ρ₂/ρ₁
+                    <b>{{ result.R21 }}</b>
+                </div>
+
+            </div>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- TABLE -->
+    <!-- ===================== -->
+
+    <div id="table" class="tab {% if active_tab == 'table' %}active{% endif %}">
+
+        <div class="card">
+
+            <h2>Isentropic Table</h2>
+
+            <form method="POST">
+
+                <input
+                    type="hidden"
+                    name="action"
+                    value="table">
+
+                <div class="form-grid">
+
+                    <div>
+
+                        <label>γ</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            name="tg"
+                            value="{{ tg }}"
+                            required>
+
+                    </div>
+
+
+                    <div>
+
+                        <label>M Start</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            name="start"
+                            value="{{ start }}"
+                            required>
+
+                    </div>
+
+
+                    <div>
+
+                        <label>M End</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            name="end"
+                            value="{{ end }}"
+                            required>
+
+                    </div>
+
+
+                    <div>
+
+                        <label>M Step</label>
+
+                        <input
+                            type="number"
+                            step="any"
+                            name="step"
+                            value="{{ step }}"
+                            required>
+
+                    </div>
+
+                </div>
+
+
+                <button class="submit">
+                    Generate Table
+                </button>
+
+            </form>
+
+        </div>
+
+
+        {% if error and active_tab == 'table' %}
+
+        <div class="error">
+            {{ error }}
+        </div>
+
+        {% endif %}
+
+
+        {% if table %}
+
+        <div class="card">
+
+            <table>
+
+                <tr>
+
+                    <th>M</th>
+                    <th>M*</th>
+                    <th>ν (°)</th>
+                    <th>μ (°)</th>
+                    <th>T/T₀</th>
+                    <th>p/p₀</th>
+                    <th>ρ/ρ₀</th>
+                    <th>A/A*</th>
+
+                </tr>
+
+
+                {% for row in table %}
+
+                <tr>
+
+                    <td>{{ row.M }}</td>
+                    <td>{{ row.Mstar }}</td>
+                    <td>{{ row.nu }}</td>
+                    <td>{{ row.mu }}</td>
+                    <td>{{ row.T }}</td>
+                    <td>{{ row.P }}</td>
+                    <td>{{ row.rho }}</td>
+                    <td>{{ row.area }}</td>
+
+                </tr>
+
+                {% endfor %}
+
+            </table>
+
+        </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- ===================== -->
+    <!-- FORMULAS -->
+    <!-- ===================== -->
+
+    <div id="formulas" class="tab">
+
+        <div class="card">
+
+            <h2>Formulas Used</h2>
+
+
+            <h3>1. Prandtl-Meyer Function</h3>
+
+            <div class="formula">
+
+                ν(M) =
+                √[(γ+1)/(γ−1)] tan⁻¹√[
+                ((γ−1)/(γ+1))(M²−1)]
+                − tan⁻¹√(M²−1)
+
+            </div>
+
+
+            <h3>2. Maximum Prandtl-Meyer Angle</h3>
+
+            <div class="formula">
+
+                ν<sub>max</sub> =
+                90°[√((γ+1)/(γ−1)) − 1]
+
+            </div>
+
+
+            <h3>3. Mach Angle</h3>
+
+            <div class="formula">
+
+                μ = sin⁻¹(1/M)
+
+            </div>
+
+
+            <h3>4. Expansion Relation</h3>
+
+            <div class="formula">
+
+                θ = ν₂ − ν₁
+
+            </div>
+
+
+            <h3>5. Downstream Prandtl-Meyer Angle</h3>
+
+            <div class="formula">
+
+                ν₂ = ν₁ + θ
+
+            </div>
+
+
+            <h3>6. Temperature Ratio</h3>
+
+            <div class="formula">
+
+                T/T₀ =
+                1 / [1 + ((γ−1)/2)M²]
+
+            </div>
+
+
+            <h3>7. Pressure Ratio</h3>
+
+            <div class="formula">
+
+                p/p₀ =
+                [1 + ((γ−1)/2)M²]
+                <sup>−γ/(γ−1)</sup>
+
+            </div>
+
+
+            <h3>8. Density Ratio</h3>
+
+            <div class="formula">
+
+                ρ/ρ₀ =
+                [1 + ((γ−1)/2)M²]
+                <sup>−1/(γ−1)</sup>
+
+            </div>
+
+
+            <h3>9. Critical Mach Number</h3>
+
+            <div class="formula">
+
+                M* =
+                √[(γ+1)M² /
+                (2 + (γ−1)M²)]
+
+            </div>
+
+
+            <h3>10. Area Ratio</h3>
+
+            <div class="formula">
+
+                A/A* =
+                (1/M)
+                [
+                (2/(γ+1))
+                (1 + ((γ−1)/2)M²)
+                ]
+                <sup>(γ+1)/(2(γ−1))</sup>
+
+            </div>
+
+
+            <h3>11. Downstream Mach Number</h3>
+
+            <div class="formula">
+
+                ν(M₂) = ν₁ + θ
+
+            </div>
+
+            <p class="note">
+
+                M₂ is obtained numerically using
+                the bisection method.
+
+            </p>
+
+
+            <h3>12. Temperature Ratio Across Expansion</h3>
+
+            <div class="formula">
+
+                T₂/T₁ =
+                (T₂/T₀) / (T₁/T₀)
+
+            </div>
+
+
+            <h3>13. Pressure Ratio Across Expansion</h3>
+
+            <div class="formula">
+
+                p₂/p₁ =
+                (p₂/p₀) / (p₁/p₀)
+
+            </div>
+
+
+            <h3>14. Density Ratio Across Expansion</h3>
+
+            <div class="formula">
+
+                ρ₂/ρ₁ =
+                (ρ₂/ρ₀) / (ρ₁/ρ₀)
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+<footer>
+
+    Prandtl-Meyer Expansion Fan Tool
+
+</footer>
+
+
+<script>
+
+function showTab(id, button) {
+
+    document
+        .querySelectorAll(".tab")
+        .forEach(tab => {
+            tab.classList.remove("active");
+        });
+
+    document
+        .querySelectorAll(".tabs button")
+        .forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+    document
+        .getElementById(id)
+        .classList.add("active");
+
+    button.classList.add("active");
+}
+
+</script>
+
+
+</body>
+
+</html>
